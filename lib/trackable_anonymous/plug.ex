@@ -1,8 +1,6 @@
 defmodule TrackableAnonymous.Plug do
-  import Plug.Conn
+  import Plug.Conn, only: []
   alias Plug.Conn
-
-  @behaviour Plug
 
   def init(opts) do
     Keyword.get(opts, :session_key, :trackable_id)
@@ -28,12 +26,11 @@ defmodule TrackableAnonymous.Plug do
   end
 
   def generate_id do
-    binary = <<
-      System.system_time(:nanoseconds)::64,
-      :erlang.phash2({node(), self()}, 16_777_216)::24,
-      :erlang.unique_integer()::32
-    >>
+    binary =
+      <<System.system_time(:nanosecond)::64, :erlang.phash2({node(), self()}, 16_777_216)::24,
+        :erlang.unique_integer()::32>>
 
-    Base.hex_encode32(binary, case: :lower)
+    :crypto.hash(:sha3_384, binary)
+    |> Base.hex_encode32(case: :lower)
   end
 end
